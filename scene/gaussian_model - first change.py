@@ -211,10 +211,8 @@ class GaussianModel:
 
     def reset_opacity(self):
         opacities_new = inverse_sigmoid(torch.min(self.get_opacity, torch.ones_like(self.get_opacity) * 0.01))
-        if self.optimizer is not None:
-            optimizable_tensors = self.replace_tensor_to_optimizer(opacities_new, "opacity")
-            self._opacity = optimizable_tensors["opacity"]
-
+        optimizable_tensors = self.replace_tensor_to_optimizer(opacities_new, "opacity")
+        self._opacity = optimizable_tensors["opacity"]
 
     def load_ply(self, path):
         plydata = PlyData.read(path)
@@ -264,17 +262,14 @@ class GaussianModel:
         for group in self.optimizer.param_groups:
             if group["name"] == name:
                 stored_state = self.optimizer.state.get(group['params'][0], None)
-                if stored_state is not None:
-                    stored_state["exp_avg"] = torch.zeros_like(tensor)
-                    stored_state["exp_avg_sq"] = torch.zeros_like(tensor)
+                stored_state["exp_avg"] = torch.zeros_like(tensor)
+                stored_state["exp_avg_sq"] = torch.zeros_like(tensor)
 
-                    del self.optimizer.state[group['params'][0]]
-                    group["params"][0] = nn.Parameter(tensor.requires_grad_(True))
-                    self.optimizer.state[group['params'][0]] = stored_state
+                del self.optimizer.state[group['params'][0]]
+                group["params"][0] = nn.Parameter(tensor.requires_grad_(True))
+                self.optimizer.state[group['params'][0]] = stored_state
 
-                    optimizable_tensors[group["name"]] = group["params"][0]
-                else:
-                    print(f"Skipping update of {name} due to NoneType state.")
+                optimizable_tensors[group["name"]] = group["params"][0]
         return optimizable_tensors
 
     def _prune_optimizer(self, mask):
